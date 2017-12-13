@@ -5,7 +5,7 @@ module.exports = (req, res) => {
     return res.status(422).send({ error: 'Phone and code must be provided' });
   }
 
-  var prefix = '';
+  let prefix = '';
   if (String(req.body.phone).startsWith('+')) {
     prefix = '+';
   }

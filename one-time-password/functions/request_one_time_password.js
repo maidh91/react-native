@@ -8,7 +8,7 @@ module.exports = (req, res) => {
   }
 
   // format the phone number to remove dashes and parens
-  var prefix = '';
+  let prefix = '';
   if (String(req.body.phone).startsWith('+')) {
     prefix = '+';
   }
