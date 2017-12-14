@@ -4,8 +4,20 @@
 
 const fs = require('fs');
 const path = require('path');
-const blacklist = require('react-native/node_modules/metro-bundler/src/blacklist');
-const babelRegisterOnly = require('react-native/node_modules/metro-bundler/src/babelRegisterOnly');
+
+let metroBundlerRequirePath;
+const rootPath = path.resolve('.');
+const nodeModulePath = path.join(rootPath, 'node_modules');
+const reactNativeModulePath = path.join(nodeModulePath, 'react-native');
+const stats = fs.lstatSync(reactNativeModulePath);
+if (stats.isSymbolicLink()) {
+  metroBundlerRequirePath = 'react-native/node_modules/metro-bundler';
+} else {
+  metroBundlerRequirePath = 'metro-bundler';
+}
+
+const blacklist = require(metroBundlerRequirePath + '/src/blacklist');
+const babelRegisterOnly = require(metroBundlerRequirePath + '/src/babelRegisterOnly');
 
 const registeredTransformModulePaths = new Set();
 
@@ -17,10 +29,7 @@ module.exports = {
     return [];
   },
   getTransformModulePath() {
-    const modulePath = path.join(
-      __dirname,
-      'transformer.js'
-    );
+    const modulePath = path.join(__dirname, 'transformer.js');
     if (!registeredTransformModulePaths.has(modulePath)) {
       babelRegisterOnly([modulePath]);
       registeredTransformModulePaths.add(modulePath);
@@ -37,15 +46,12 @@ function getNodeModulesForDirectory(rootPath) {
     const folderPath = path.join(nodeModulePath, folderName);
     if (folderName.startsWith('@')) {
       const scopedModuleFolders = fs.readdirSync(folderPath);
-      const scopedModules = scopedModuleFolders.reduce(
-        (scopedModules, scopedFolderName) => {
-          scopedModules[
-            `${folderName}/${scopedFolderName}`
-          ] = maybeResolveSymlink(path.join(folderPath, scopedFolderName));
-          return scopedModules;
-        },
-        {}
-      );
+      const scopedModules = scopedModuleFolders.reduce((scopedModules, scopedFolderName) => {
+        scopedModules[`${folderName}/${scopedFolderName}`] = maybeResolveSymlink(
+          path.join(folderPath, scopedFolderName)
+        );
+        return scopedModules;
+      }, {});
       return Object.assign({}, modules, scopedModules);
     }
     modules[folderName] = maybeResolveSymlink(folderPath);

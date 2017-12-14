@@ -14,14 +14,11 @@
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
-    packagerOpts: {
-      assetExts: [
-        "ttf"
-      ],
-      config: "./_universe/rn-cli.config.js"
-    },
     ios: {
       supportsTablet: true
+    },
+    packagerOpts: {
+      config: "./_universe/rn-cli.config.js"
     },
     entryPoint: "_universe/entry.js"
   }

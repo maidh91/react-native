@@ -20,40 +20,48 @@
  *     if we hadn't forked the transformer at all
  */
 
-const babel = require('react-native/node_modules/babel-core');
-const crypto = require('crypto');
-const externalHelpersPlugin = require('react-native/node_modules/babel-plugin-external-helpers');
 const fs = require('fs');
-const generate = require('react-native/node_modules/babel-generator').default;
-const inlineRequiresPlugin = require('react-native/node_modules/babel-preset-fbjs/plugins/inline-requires');
-const makeHMRConfig = require('react-native/node_modules/babel-preset-react-native/configs/hmr');
 const path = require('path');
-const resolvePlugins = require('react-native/node_modules/babel-preset-react-native/lib/resolvePlugins');
 
-const {
-  compactMapping,
-} = require('react-native/node_modules/metro-bundler/src/Bundler/source-map');
+let moduleBasePath = '';
+let isLinked = false;
+const rootPath = path.resolve('.');
+const nodeModulePath = path.join(rootPath, 'node_modules');
+const reactNativeModulePath = path.join(nodeModulePath, 'react-native');
+const stats = fs.lstatSync(reactNativeModulePath);
+if (stats.isSymbolicLink()) {
+  isLinked = true;
+  moduleBasePath = path.join(reactNativeModulePath, 'node_modules') + path.sep;
+}
+
+const babel = require(moduleBasePath + 'babel-core');
+const crypto = require('crypto');
+const externalHelpersPlugin = require(moduleBasePath + 'babel-plugin-external-helpers');
+const generate = require(moduleBasePath + 'babel-generator').default;
+const inlineRequiresPlugin = require(moduleBasePath + 'babel-preset-fbjs/plugins/inline-requires');
+const makeHMRConfig = require(moduleBasePath + 'babel-preset-react-native/configs/hmr');
+const resolvePlugins = require(moduleBasePath + 'babel-preset-react-native/lib/resolvePlugins');
+
+const { compactMapping } = require(moduleBasePath + 'metro-bundler/src/Bundler/source-map');
 
 const cacheKeyParts = [
   fs.readFileSync(__filename),
-  require('react-native/node_modules/babel-plugin-external-helpers/package.json')
-    .version,
-  require('react-native/node_modules/babel-preset-fbjs/package.json').version,
-  require('react-native/node_modules/babel-preset-react-native/package.json')
-    .version,
+  require(moduleBasePath + 'babel-plugin-external-helpers/package.json').version,
+  require(moduleBasePath + 'babel-preset-fbjs/package.json').version,
+  require(moduleBasePath + 'babel-preset-react-native/package.json').version,
 ];
 
-const EXPO_REACT_NATIVE_PATH = path.join(
-  process.env.EXPO_UNIVERSE_DIR,
-  'react-native-lab',
-  'react-native'
-);
+const EXPO_REACT_NATIVE_PATH = isLinked
+  ? path.join(process.env.EXPO_UNIVERSE_DIR, 'react-native-lab', 'react-native')
+  : reactNativeModulePath;
 if (!fs.existsSync(EXPO_REACT_NATIVE_PATH)) {
   throw new Error(
     `Expo copy of React Native could not be found. Are you sure it exists at: ${EXPO_REACT_NATIVE_PATH}?`
   );
 }
-const EXPO_REACT_PATH = path.join(EXPO_REACT_NATIVE_PATH, 'node_modules/react');
+let EXPO_REACT_PATH = isLinked
+  ? path.join(EXPO_REACT_NATIVE_PATH, 'node_modules/react')
+  : path.join(nodeModulePath, 'react');
 if (!fs.existsSync(EXPO_REACT_PATH)) {
   throw new Error(
     `React Native's "react" peer could not be found. Are you sure it exists at: ${EXPO_REACT_PATH}?`
@@ -93,9 +101,7 @@ const getBabelRC = (function() {
 
       // Require the babel-preset's listed in the default babel config
       // $FlowFixMe: dynamic require can't be avoided
-      babelRC.presets = babelRC.presets.map(preset =>
-        require('babel-preset-' + preset)
-      );
+      babelRC.presets = babelRC.presets.map(preset => require('babel-preset-' + preset));
       babelRC.plugins = resolvePlugins(babelRC.plugins);
     } else {
       // if we find a .babelrc file we tell babel to use it
@@ -131,8 +137,7 @@ function buildBabelConfig(filename, options) {
   const extraPlugins = [externalHelpersPlugin];
 
   var inlineRequires = options.inlineRequires;
-  var blacklist =
-    typeof inlineRequires === 'object' ? inlineRequires.blacklist : null;
+  var blacklist = typeof inlineRequires === 'object' ? inlineRequires.blacklist : null;
   if (inlineRequires && !(blacklist && filename in blacklist)) {
     extraPlugins.push(inlineRequiresPlugin);
   }
@@ -182,9 +187,7 @@ function transform({ filename, options, src }) {
         ast,
         code: result.code,
         filename,
-        map: options.generateSourceMaps
-          ? result.map
-          : result.rawMappings.map(compactMapping),
+        map: options.generateSourceMaps ? result.map : result.rawMappings.map(compactMapping),
       };
     }
   } catch (e) {

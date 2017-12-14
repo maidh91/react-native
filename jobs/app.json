@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "jobs",
-    "description": "No description",
+    "description": "A very interesting project.",
     "slug": "jobs",
     "privacy": "public",
-    "sdkVersion": "23.0.0",
+    "sdkVersion": "24.0.0",
+    "platforms": ["ios", "android"],
     "version": "1.0.0",
     "orientation": "portrait",
-    "primaryColor": "#cccccc",
     "icon": "./assets/images/icon.png",
     "splash": {
       "image": "./assets/images/splash.png",
